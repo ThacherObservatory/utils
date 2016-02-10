@@ -7,7 +7,7 @@ been incorporated into the AstroIDL User's Library.  Function included are:
   * biweightMean - biweighted mean estimator
   * mean - robust estimator of the mean of a data set
   * std - robust estimator of the standard deviation of a data set
-  * checkfit - return the standard deviation and biweights for a fit in order 
+  * checkfit - return the standard deviation and biweights for a fit in order
     to determine its quality
   * linefit - outlier resistant fit of a line to data
   * polyfit - outlier resistant fit of a polynomial to data
@@ -33,26 +33,26 @@ __epsilon = 1.0e-20
 
 def biweightMean(inputData):
 	"""
-	Calculate the mean of a data set using bisquare weighting.  
-	
-	Based on the biweight_mean routine from the AstroIDL User's 
+	Calculate the mean of a data set using bisquare weighting.
+
+	Based on the biweight_mean routine from the AstroIDL User's
 	Library.
 	"""
-	
+
 	y = inputData.ravel()
 	if type(y).__name__ == "MaskedArray":
 		y = y.compressed()
-	
+
 	n = len(y)
 	closeEnough = 0.03*numpy.sqrt(0.5/(n-1))
-	
+
 	diff = 1.0e30
 	nIter = 0
-	
+
 	y0 = numpy.median(y)
 	deviation = y - y0
 	sigma = std(deviation)
-	
+
 	if sigma < __epsilon:
 		diff = 0
 	while diff > closeEnough:
@@ -71,13 +71,13 @@ def biweightMean(inputData):
 			diff = numpy.abs(prevSigma - sigma) / prevSigma
 		else:
 			diff = 0.0
-			
+
 	return y0
 
 
 def mean(inputData, Cut=3.0):
 	"""
-	Robust estimator of the mean of a data set.  Based on the 
+	Robust estimator of the mean of a data set.  Based on the
 	resistant_mean function from the AstroIDL User's Library.
 
 	.. seealso::
@@ -127,8 +127,8 @@ def mean(inputData, Cut=3.0):
 
 def std(inputData, Zero=False):
 	"""
-	Robust estimator of the standard deviation of a data set.  
-	
+	Robust estimator of the standard deviation of a data set.
+
 	Based on the robust_sigma function from the AstroIDL User's Library.
 	"""
 
@@ -152,7 +152,7 @@ def std(inputData, Zero=False):
 	good = numpy.where( u2 <= 1.0 )
 	good = good[0]
 	if len(good) < 3:
-		print "WARNING:  Distribution is too strange to compute standard deviation"
+		print("WARNING:  Distribution is too strange to compute standard deviation")
 		sigma = -1.0
 		return sigma
 
@@ -177,11 +177,11 @@ def checkfit(inputData, inputFit, epsilon, delta, BisquareLimit=6.0):
 	  2. Number of input points given non-zero weight in the calculation
 	  3. Bisquare weights of the input points
 	  4. Residual values scaled by sigma
-	
-	This function is based on the rob_checkfit routine from the AstroIDL 
+
+	This function is based on the rob_checkfit routine from the AstroIDL
 	User's Library.
 	"""
-	
+
 	data = inputData.ravel()
 	fit = inputFit.ravel()
 	if type(data).__name__ == "MaskedArray":
@@ -193,7 +193,7 @@ def checkfit(inputData, inputFit, epsilon, delta, BisquareLimit=6.0):
 	sigma = std(deviation, Zero=True)
 	if sigma < epsilon:
 		return (sigma, 0.0, 0, 0.0, 0.0)
-	
+
 	toUse = (numpy.where( numpy.abs(fit) > epsilon ))[0]
 	if len(toUse) > 3:
 		fracDev = 0.0
@@ -201,45 +201,45 @@ def checkfit(inputData, inputFit, epsilon, delta, BisquareLimit=6.0):
 		fracDev = numpy.median(numpy.abs(deviation[toUse]/fit[toUse]))
 	if fracDev < delta:
 		return (sigma, fracDev, 0, 0.0, 0.0)
-		
+
 	biweights = numpy.abs(deviation)/(BisquareLimit*sigma)
 	toUse = (numpy.where(biweights > 1))[0]
 	if len(toUse) > 0:
 		biweights[toUse] = 1.0
 	nGood = len(data) - len(toUse)
-	
+
 	scaledResids = (1.0 - biweights**2.0)
 	scaledResids = scaledResids / scaledResids.sum()
-	
+
 	return (sigma, fracDev, nGood, biweights, scaledResids)
 
 
 def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, CloseFactor=0.03):
 	"""
 	Outlier resistance two-variable linear regression function.
-	
+
 	Based on the robust_linefit routine in the AstroIDL User's Library.
 	"""
-	
+
 	xIn = inputX.ravel()
 	yIn = inputY.ravel()
 	if type(yIn).__name__ == "MaskedArray":
 		xIn = xIn.compress(numpy.logical_not(yIn.mask))
 		yIn = yIn.compressed()
 	n = len(xIn)
-	
+
 	x0 = xIn.sum() / n
 	y0 = yIn.sum() / n
 	x = xIn - x0
 	y = yIn - y0
-	
+
 	cc = numpy.zeros(2)
 	ss = numpy.zeros(2)
 	sigma = 0.0
 	yFit = yIn
 	badFit = 0
 	nGood = n
-	
+
 	lsq = 0.0
 	yp = y
 	if n > 5:
@@ -262,7 +262,7 @@ def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, Close
 		sigma, fracDev, nGood, biweights, scaledResids = checkfit(yp, yFit, __epsilon, __delta)
 		if nGood < 2:
 			lsq = 1.0
-		
+
 	if lsq == 1 or n < 6:
 		sx = x.sum()
 		sy = y.sum()
@@ -273,7 +273,7 @@ def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, Close
 			return (0.0, 0.0)
 		ySlope = (sxy - sx*sy) / d
 		yYInt = (sxx*sy - sx*sxy) / d
-		
+
 		if Bisector:
 			syy = (y*y).sum()
 			d = syy - sy*sy
@@ -317,11 +317,11 @@ def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, Close
 		cc[0] = yInt
 		cc[1] = slope
 		sigma, fracDev, nGood, biweights, scaledResids = checkfit(yp, yFit, __epsilon, __delta)
-		
+
 	if nGood < 2:
 		cc[0] = cc[0] + y0 - cc[1]*x0
 		return cc[::-1]
-		
+
 	sigma1 = (100.0*sigma)
 	closeEnough = CloseFactor * numpy.sqrt(0.5/(n-1))
 	if closeEnough < __delta:
@@ -345,7 +345,7 @@ def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, Close
 		yYInt = (sxx*sy - sx*sxy) / d
 		slope = ySlope
 		yInt = yYInt
-		
+
 		if Bisector:
 			syy = (biweights*y*y).sum()
 			d = syy - sy*sy
@@ -387,7 +387,7 @@ def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, Close
 		cc[0] = yInt
 		cc[1] = slope
 		sigma, fracDev, nGood, biweights, scaledResids = checkfit(yp, yFit, __epsilon, __delta)
-		
+
 		if nGood < 2:
 			badFit = 1
 			break
@@ -397,7 +397,7 @@ def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, Close
 			diff = diff1
 		else:
 			diff = diff2
-				
+
 	cc[0] = cc[0] + y0 - cc[1]*x0
 	return cc[::-1]
 
@@ -405,37 +405,37 @@ def linefit(inputX, inputY, iterMax=25, Bisector=False, BisquareLimit=6.0, Close
 def polyfit(inputX, inputY, order, iterMax=25):
 	"""
 	Outlier resistance two-variable polynomial function fitter.
-	
-	Based on the robust_poly_fit routine in the AstroIDL User's 
+
+	Based on the robust_poly_fit routine in the AstroIDL User's
 	Library.
-	
+
 	Unlike robust_poly_fit, two different polynomial fitters are used
 	because numpy.polyfit does not support non-uniform weighting of the
 	data.  For the weighted fitting, the SciPy Orthogonal Distance
 	Regression module (scipy.odr) is used.
 	"""
-	
+
 	from scipy import odr
-	
+
 	def polyFunc(B, x, order=order):
 		out = x*0.0
 		for i in range(order+1):
 			out = out + B[i]*x**i
-	
+
 	model = odr.Model(polyFunc)
-	
+
 	x = inputX.ravel()
 	y = inputY.ravel()
 	if type(y).__name__ == "MaskedArray":
 		x = x.compress(numpy.logical_not(y.mask))
 		y = y.compressed()
 	n = len(x)
-	
+
 	x0 = x.sum() / n
 	y0 = y.sum() / n
 	u = x
 	v = y
-		
+
 	nSeg = order + 2
 	if (nSeg/2)*2 == nSeg:
 		nSeg = nSeg + 1
@@ -464,7 +464,7 @@ def polyfit(inputX, inputY, order, iterMax=25):
 			s[i] = numpy.median(v[i1:i2])
 		cc = numpy.polyfit(r, s, order)
 		yFit = numpy.polyval(cc, u)
-		
+
 	sigma, fracDev, nGood, biweights, scaledResids = checkfit(v, yFit, __epsilon, __delta)
 	if nGood == 0:
 		return cc
@@ -478,7 +478,7 @@ def polyfit(inputX, inputY, order, iterMax=25):
 			nGood = n - nGood
 		if nGood < minPts:
 			return 0
-		
+
 	closeEnough = 0.03*numpy.sqrt(0.5/(n-1))
 	if closeEnough < __delta:
 		closeEnough = __delta
