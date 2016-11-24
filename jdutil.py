@@ -8,7 +8,7 @@ calendar in 1582. No support for proleptic Gregorian/Julian calendars.
 
 """
 
-import math
+import math,pdb
 import datetime as dt
 
 # Note: The Python datetime module assumes an infinitely valid Gregorian calendar.
@@ -264,8 +264,11 @@ def days_to_hmsm(days):
     
     secs = mins * 60.
     secs, sec = math.modf(secs)
-    
+
     micro = round(secs * 1.e6)
+    if micro == 1000000:
+        micro = 0
+        sec += 1
     
     return int(hour), int(min), int(sec), int(micro)
     
